@@ -1,0 +1,20 @@
+name: Validate PR Metadata
+on: [pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Salesforce CLI
+        run: |
+          npm install sfdx-cli --global
+      - name: Authenticate with Dev Org
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo $SFDX_AUTH_URL > auth.txt
+          sfdx auth:sfdxurl:store -f auth.txt -a DevSandbox
+      - name: Validate Metadata
+        run: |
+          sfdx force:source:deploy -p force-app -u DevSandbox -c
