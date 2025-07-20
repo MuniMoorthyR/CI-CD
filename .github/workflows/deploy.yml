@@ -1,14 +1,49 @@
-on: [pull_request]
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    - name: Validate Metadata
-      run: sfdx force:source:deploy -p force-app -u DevSandbox -c
+name: Salesforce CI/CD
+
 on:
+  pull_request:
+    branches: [develop]
   push:
     branches: [main]
+
 jobs:
-  deploy:
+  validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    - name: Deploy to Sandbox
-      run: sfdx force:source:deploy -p force-app -u DevSandbox --testlevel=RunLocalTests
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: npm install sfdx-cli --global
+
+      - name: Authenticate with Dev Org
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo "$SFDX_AUTH_URL" > auth.txt
+          sfdx auth:sfdxurl:store -f auth.txt -a DevSandbox
+
+      - name: Validate Metadata
+        run: sfdx force:source:deploy -p force-app -u DevSandbox -c
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: npm install sfdx-cli --global
+
+      - name: Authenticate
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo "$SFDX_AUTH_URL" > auth.txt
+          sfdx auth:sfdxurl:store -f auth.txt -a DevSandbox
+
+      - name: Deploy to Sandbox
+        run: sfdx force:source:deploy -p force-app -u DevSandbox --testlevel=RunLocalTests
+
+      - name: Run Apex Tests
+        run: sfdx force:apex:test:run -u DevSandbox --resultformat human --outputdir test-results --codecoverage
