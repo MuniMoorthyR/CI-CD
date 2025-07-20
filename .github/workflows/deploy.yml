@@ -2,7 +2,6 @@ on: [pull_request]
 jobs:
   validate:
     runs-on: ubuntu-latest
-    ...
     - name: Validate Metadata
       run: sfdx force:source:deploy -p force-app -u DevSandbox -c
 on:
@@ -11,6 +10,5 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    ...
     - name: Deploy to Sandbox
       run: sfdx force:source:deploy -p force-app -u DevSandbox --testlevel=RunLocalTests
